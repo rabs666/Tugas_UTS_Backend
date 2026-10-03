@@ -25,8 +25,12 @@ func (api *API) login(c *fiber.Ctx) error {
 		Email    string `json:"email" validate:"required,email"`
 		Password string `json:"password" validate:"required,min=8"`
 	}
-	if err := validate(api, c, &input); err != nil {
+	valid, err := validate(api, c, &input)
+	if err != nil {
 		return err
+	}
+	if !valid {
+		return nil
 	}
 	ip := c.IP()
 	if api.loginLock.tooMany(ip, time.Now()) {
@@ -35,7 +39,7 @@ func (api *API) login(c *fiber.Ctx) error {
 
 	var userID int64
 	var email, role, hash string
-	err := api.db.QueryRowContext(c.UserContext(), `
+	err = api.db.QueryRowContext(c.UserContext(), `
 		SELECT u.id, u.email, u.role, u.password
 		FROM users u
 		LEFT JOIN students s ON s.user_id = u.id

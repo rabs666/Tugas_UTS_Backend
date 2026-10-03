@@ -59,7 +59,8 @@ Daftar mahasiswa menerima `page`, `per_page` (maksimum 50), `prodi`, `angkatan`,
 KRS divalidasi dalam transaksi: duplikasi dicegah oleh constraint unik, baris mata
 kuliah dikunci saat pemeriksaan kuota, dan baris mahasiswa dikunci agar permintaan
 bersamaan tidak melampaui batas SKS. Batas SKS mengikuti IPK: minimal 3,00 = 24,
-2,50–2,99 = 21, dan di bawah 2,50 = 18 SKS per tahun akademik.
+2,50–2,99 = 21, dan di bawah 2,50 = 18 SKS per semester akademik (Ganjil atau
+Genap pada tahun akademik yang dipilih).
 
 ## Pemeriksaan
 

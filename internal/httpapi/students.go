@@ -27,8 +27,8 @@ type studentUpdateInput struct {
 }
 
 func (api *API) listStudents(c *fiber.Ctx) error {
-	if err := api.requireAdmin(c); err != nil {
-		return err
+	if !api.requireAdmin(c) {
+		return fail(c, fiber.StatusForbidden, "Akses hanya untuk admin")
 	}
 	page, err := queryInt(c, "page", 1, 1, 2147483647)
 	if err != nil {
@@ -110,12 +110,16 @@ func (api *API) listStudents(c *fiber.Ctx) error {
 }
 
 func (api *API) createStudent(c *fiber.Ctx) error {
-	if err := api.requireAdmin(c); err != nil {
-		return err
+	if !api.requireAdmin(c) {
+		return fail(c, fiber.StatusForbidden, "Akses hanya untuk admin")
 	}
 	var input studentInput
-	if err := validate(api, c, &input); err != nil {
+	valid, err := validate(api, c, &input)
+	if err != nil {
 		return err
+	}
+	if !valid {
+		return nil
 	}
 	if input.Angkatan != time.Now().Year() {
 		return invalid(c, map[string][]string{"angkatan": {"Harus sama dengan tahun berjalan"}})
@@ -220,16 +224,20 @@ func (api *API) getStudent(c *fiber.Ctx) error {
 }
 
 func (api *API) updateStudent(c *fiber.Ctx) error {
-	if err := api.requireAdmin(c); err != nil {
-		return err
+	if !api.requireAdmin(c) {
+		return fail(c, fiber.StatusForbidden, "Akses hanya untuk admin")
 	}
 	id, err := parseID(c.Params("id"))
 	if err != nil {
 		return fail(c, fiber.StatusNotFound, "Mahasiswa tidak ditemukan")
 	}
 	var input studentUpdateInput
-	if err := validate(api, c, &input); err != nil {
+	valid, err := validate(api, c, &input)
+	if err != nil {
 		return err
+	}
+	if !valid {
+		return nil
 	}
 	if strings.TrimSpace(input.Nama) == "" || strings.TrimSpace(input.Prodi) == "" {
 		return invalid(c, map[string][]string{"nama": {"Nama dan prodi tidak boleh hanya berisi spasi"}})
@@ -253,8 +261,8 @@ func (api *API) updateStudent(c *fiber.Ctx) error {
 }
 
 func (api *API) deleteStudent(c *fiber.Ctx) error {
-	if err := api.requireAdmin(c); err != nil {
-		return err
+	if !api.requireAdmin(c) {
+		return fail(c, fiber.StatusForbidden, "Akses hanya untuk admin")
 	}
 	id, err := parseID(c.Params("id"))
 	if err != nil {

@@ -13,15 +13,19 @@ import (
 var academicYearPattern = regexp.MustCompile(`^[0-9]{4}/[0-9]{4}-(Ganjil|Genap)$`)
 
 func (api *API) createEnrollment(c *fiber.Ctx) error {
-	if err := api.requireStudent(c); err != nil {
-		return err
+	if !api.requireStudent(c) {
+		return fail(c, fiber.StatusForbidden, "Akses hanya untuk mahasiswa")
 	}
 	var input struct {
 		CourseID      int64  `json:"course_id" validate:"required,gt=0"`
 		TahunAkademik string `json:"tahun_akademik" validate:"required"`
 	}
-	if err := validate(api, c, &input); err != nil {
+	valid, err := validate(api, c, &input)
+	if err != nil {
 		return err
+	}
+	if !valid {
+		return nil
 	}
 	if !academicYearPattern.MatchString(input.TahunAkademik) {
 		return invalid(c, map[string][]string{"tahun_akademik": {"Format harus YYYY/YYYY-Ganjil atau YYYY/YYYY-Genap"}})
@@ -117,8 +121,8 @@ func (api *API) createEnrollment(c *fiber.Ctx) error {
 }
 
 func (api *API) deleteEnrollment(c *fiber.Ctx) error {
-	if err := api.requireStudent(c); err != nil {
-		return err
+	if !api.requireStudent(c) {
+		return fail(c, fiber.StatusForbidden, "Akses hanya untuk mahasiswa")
 	}
 	id, err := parseID(c.Params("id"))
 	if err != nil {

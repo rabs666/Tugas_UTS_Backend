@@ -109,20 +109,14 @@ func (api *API) authenticate(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-func (api *API) requireAdmin(c *fiber.Ctx) error {
+func (api *API) requireAdmin(c *fiber.Ctx) bool {
 	user, _ := c.Locals("user").(*claims)
-	if user == nil || user.Role != "admin" {
-		return fail(c, fiber.StatusForbidden, "Akses hanya untuk admin")
-	}
-	return c.Next()
+	return user != nil && user.Role == "admin"
 }
 
-func (api *API) requireStudent(c *fiber.Ctx) error {
+func (api *API) requireStudent(c *fiber.Ctx) bool {
 	user, _ := c.Locals("user").(*claims)
-	if user == nil || user.Role != "mahasiswa" {
-		return fail(c, fiber.StatusForbidden, "Akses hanya untuk mahasiswa")
-	}
-	return c.Next()
+	return user != nil && user.Role == "mahasiswa"
 }
 
 func (api *API) issueToken(userID int64, email, role string) (string, error) {
@@ -157,14 +151,15 @@ func invalid(c *fiber.Ctx, errs map[string][]string) error {
 	})
 }
 
-func validate(api *API, c *fiber.Ctx, input interface{}) error {
+func validate(api *API, c *fiber.Ctx, input interface{}) (bool, error) {
 	if err := c.BodyParser(input); err != nil {
-		return invalid(c, map[string][]string{"body": {"Format JSON tidak valid"}})
+		invalid(c, map[string][]string{"body": {"Format JSON tidak valid"}})
+		return false, nil
 	}
 	if err := api.validator.Struct(input); err != nil {
 		validationErr, ok := err.(validator.ValidationErrors)
 		if !ok {
-			return err
+			return false, err
 		}
 		errs := make(map[string][]string)
 		for _, fieldErr := range validationErr {
@@ -192,9 +187,10 @@ func validate(api *API, c *fiber.Ctx, input interface{}) error {
 				errs[name] = append(errs[name], "Nilai tidak valid")
 			}
 		}
-		return invalid(c, errs)
+		invalid(c, errs)
+		return false, nil
 	}
-	return nil
+	return true, nil
 }
 
 func jsonFieldName(input interface{}, structField string) string {
